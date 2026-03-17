@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="タスク帳">
+  <meta name="theme-color" content="#FFD93D">
+  <title>タスク帳</title>
+
+  <!-- PWA manifest inline -->
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --font: 'Hiragino Maru Gothic Pro', 'M PLUS Rounded 1c', sans-serif;
+      --bg: #FFF9F0;
+      --dot: #FFD93D33;
+    }
+
+    body {
+      font-family: var(--font);
+      background-color: var(--bg);
+      background-image: radial-gradient(var(--dot) 1px, transparent 1px);
+      background-size: 28px 28px;
+      min-height: 100vh;
+      padding: 20px 14px 80px;
+      color: #111;
+    }
+
+    h1 {
+      font-family: 'Fredoka One', 'Hiragino Maru Gothic Pro', cursive;
+      font-size: 34px;
+      letter-spacing: 2px;
+    }
+
+    /* HEADER */
+    .header { text-align: center; margin-bottom: 24px; }
+    .header-badge {
+      display: inline-block;
+      background: #FFD93D; border: 3px solid #000;
+      border-radius: 20px; padding: 8px 28px;
+      box-shadow: 5px 5px 0 #000; margin-bottom: 10px;
+    }
+    .chips { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+    .chip {
+      font-size: 12px; font-weight: 700; border-radius: 20px;
+      padding: 4px 12px; border: 2px solid; box-shadow: 2px 2px 0;
+    }
+
+    /* PANEL */
+    .panel {
+      background: #fff; border: 3px solid #000;
+      border-radius: 20px; padding: 18px;
+      box-shadow: 6px 6px 0 #000; margin-bottom: 20px;
+    }
+    .panel-title { font-weight: 900; font-size: 14px; margin-bottom: 12px; letter-spacing: 1px; }
+
+    /* INPUTS */
+    .add-row { display: flex; gap: 8px; margin-bottom: 12px; }
+    .main-input {
+      flex: 1; border: 2.5px solid #000; border-radius: 12px;
+      padding: 10px 14px; font-size: 15px; font-family: var(--font);
+      background: #FFFDF5; color: #111;
+    }
+    .add-btn {
+      background: #FF6B6B; color: #fff; border: 2.5px solid #000;
+      border-radius: 12px; padding: 0 20px; font-size: 24px; font-weight: 900;
+      cursor: pointer; box-shadow: 3px 3px 0 #000; transition: all 0.1s;
+    }
+    .add-btn:active { transform: translate(2px,2px); box-shadow: none; }
+
+    .label { font-size: 11px; font-weight: 900; margin-bottom: 5px; color: #666; letter-spacing: 0.5px; }
+
+    .btn-group { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .sel-btn {
+      padding: 5px 14px; border-radius: 20px; border: 2px solid #000;
+      font-weight: 700; font-size: 13px; cursor: pointer;
+      font-family: var(--font); transition: all 0.1s;
+    }
+    .sel-btn:active { transform: translate(1px,1px); }
+
+    .meta-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; }
+    .date-input {
+      border: 2px solid #000; border-radius: 10px;
+      padding: 6px 10px; font-size: 13px; font-family: var(--font);
+      background: #fafafa; color: #111;
+    }
+
+    .tag-box {
+      flex: 1; min-width: 150px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+      border: 2px solid #000; border-radius: 10px;
+      padding: 4px 8px; background: #fafafa; min-height: 36px;
+    }
+    .tag-pill {
+      background: #FFD93D; border: 1.5px solid #000; border-radius: 10px;
+      padding: 2px 8px; font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; gap: 4px;
+    }
+    .tag-remove { cursor: pointer; font-weight: 900; }
+    .tag-input {
+      border: none; background: transparent; font-size: 13px;
+      outline: none; min-width: 60px; font-family: var(--font);
+    }
+
+    /* FILTERS */
+    .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+    .filter-btn {
+      padding: 4px 12px; border-radius: 20px; border: 2px solid #000;
+      font-size: 12px; cursor: pointer; font-family: var(--font); font-weight: 500;
+      background: #fff; transition: all 0.1s;
+    }
+    .filter-btn.active { background: #FFD93D; font-weight: 900; box-shadow: 2px 2px 0 #000; }
+    .filter-btn:active { transform: translate(1px,1px); box-shadow: none !important; }
+    .toggle-done {
+      margin-left: auto; padding: 4px 12px; border-radius: 20px;
+      border: 2px solid #000; background: #E8F4FF;
+      font-size: 12px; cursor: pointer; font-family: var(--font); font-weight: 700;
+      box-shadow: 2px 2px 0 #000;
+    }
+
+    /* TASK CARDS */
+    .task-list { display: flex; flex-direction: column; gap: 10px; }
+    .task-card {
+      border: 3px solid; border-radius: 16px;
+      padding: 14px 14px; display: flex; gap: 10px; align-items: flex-start;
+      transition: transform 0.15s;
+    }
+    .task-card:active { transform: scale(0.98); }
+    .task-card.done { opacity: 0.55; }
+
+    .check-box {
+      width: 26px; height: 26px; border-radius: 8px; border: 2.5px solid #000;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0; font-size: 16px; font-weight: 900;
+      margin-top: 2px;
+    }
+
+    .task-content { flex: 1; min-width: 0; }
+    .task-text {
+      font-size: 15px; font-weight: 700; word-break: break-word;
+      border: none; background: transparent; font-family: var(--font);
+      color: #111; width: 100%; outline: none;
+    }
+    .task-text.done-text { text-decoration: line-through; color: #999; }
+    .task-text.editing { border-bottom: 2px solid #000; }
+
+    .task-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; align-items: center; }
+    .meta-tag {
+      font-size: 11px; font-weight: 700; border: 1.5px solid #000;
+      border-radius: 10px; padding: 2px 8px;
+    }
+
+    .del-btn {
+      background: #FF4757; color: #fff; border: 2px solid #000;
+      border-radius: 8px; width: 28px; height: 28px; font-size: 16px;
+      cursor: pointer; flex-shrink: 0; box-shadow: 2px 2px 0 #000;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-family: var(--font);
+    }
+    .del-btn:active { transform: translate(2px,2px); box-shadow: none; }
+
+    .empty { text-align: center; padding: 48px 0; font-size: 18px; color: #aaa; }
+    .footer-hint { text-align: center; margin-top: 24px; color: #bbb; font-size: 12px; }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+const CATEGORIES = [
+  { label: "💼 仕事",  color: "#FF6B6B", bg: "#FFF0F0" },
+  { label: "🏠 個人",  color: "#4ECDC4", bg: "#F0FFFE" },
+  { label: "🛒 買い物", color: "#FFD93D", bg: "#FFFDF0" },
+  { label: "⭐ その他", color: "#A78BFA", bg: "#F5F0FF" },
+];
+const PRIORITIES = [
+  { label: "🔥 高", color: "#FF4757", shadow: "4px 4px 0 #CC0000" },
+  { label: "⚡ 中", color: "#FF7F50", shadow: "4px 4px 0 #CC5500" },
+  { label: "🌿 低", color: "#2ED573", shadow: "4px 4px 0 #00AA44" },
+];
+const CARD_COLORS = [
+  { bg: "#FFE8E8", border: "#FF6B6B", shadow: "#FF6B6B" },
+  { bg: "#E8FFF8", border: "#4ECDC4", shadow: "#4ECDC4" },
+  { bg: "#FFF8E8", border: "#FFD93D", shadow: "#FFD93D" },
+  { bg: "#F0E8FF", border: "#A78BFA", shadow: "#A78BFA" },
+  { bg: "#E8F4FF", border: "#60A5FA", shadow: "#60A5FA" },
+  { bg: "#FFE8F5", border: "#F472B6", shadow: "#F472B6" },
+];
+
+let state = {
+  tasks: JSON.parse(localStorage.getItem('tasks') || 'null') || [
+    { id:1, text:"プレゼン資料を完成させる", priority:"🔥 高", category:"💼 仕事", due:"2026-03-16", done:false, tags:["デザイン"] },
+    { id:2, text:"週次レポートを提出",       priority:"⚡ 中", category:"💼 仕事", due:"2026-03-18", done:false, tags:[] },
+    { id:3, text:"牛乳・卵・パンを買う",     priority:"🌿 低", category:"🛒 買い物", due:"",         done:true,  tags:["食料品"] },
+    { id:4, text:"ジムに行く",               priority:"🌿 低", category:"🏠 個人",  due:"2026-03-17", done:false, tags:["健康"] },
+  ],
+  nextId: 10,
+  input: "", priority: "⚡ 中", category: "💼 仕事", due: "", tagInput: "", tags: [],
+  filterCat: "すべて", filterPri: "すべて", showDone: true,
+  editId: null,
+};
+
+function save() { localStorage.setItem('tasks', JSON.stringify(state.tasks)); }
+
+function cardColor(id) { return CARD_COLORS[id % CARD_COLORS.length]; }
+
+function formatDue(d) {
+  if (!d) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const due = new Date(d); due.setHours(0,0,0,0);
+  const diff = Math.round((due - today) / 86400000);
+  const label = `${due.getMonth()+1}/${due.getDate()}`;
+  if (diff < 0)  return { text: `${Math.abs(diff)}日超過`, bg:"#FF4757", color:"#fff" };
+  if (diff === 0) return { text: "今日締切！",            bg:"#FFD93D", color:"#000" };
+  if (diff <= 3)  return { text: `あと${diff}日`,          bg:"#FFB347", color:"#000" };
+  return { text: `📅 ${label}`, bg:"#E8F4FF", color:"#000" };
+}
+
+function addTag() {
+  const t = state.tagInput.trim().replace(/,/g,'');
+  if (t && !state.tags.includes(t)) { state.tags.push(t); }
+  state.tagInput = "";
+  render();
+}
+
+function addTask() {
+  if (!state.input.trim()) return;
+  state.tasks.unshift({ id: state.nextId++, text: state.input.trim(),
+    priority: state.priority, category: state.category,
+    due: state.due, done: false, tags: [...state.tags] });
+  state.input = ""; state.due = ""; state.tags = [];
+  save(); render();
+}
+
+function toggleDone(id) {
+  const t = state.tasks.find(t=>t.id===id);
+  if (t) t.done = !t.done;
+  save(); render();
+}
+
+function deleteTask(id) {
+  state.tasks = state.tasks.filter(t=>t.id!==id);
+  save(); render();
+}
+
+function saveEdit(id) {
+  const el = document.getElementById('edit-'+id);
+  if (el) {
+    const t = state.tasks.find(t=>t.id===id);
+    if (t && el.value.trim()) t.text = el.value.trim();
+  }
+  state.editId = null;
+  save(); render();
+}
+
+function getFiltered() {
+  return state.tasks.filter(t => {
+    if (!state.showDone && t.done) return false;
+    if (state.filterCat !== "すべて" && t.category !== state.filterCat) return false;
+    if (state.filterPri !== "すべて" && t.priority !== state.filterPri) return false;
+    return true;
+  });
+}
+
+function h(tag, attrs, ...children) {
+  const el = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs||{})) {
+    if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2).toLowerCase(), v);
+    else el.setAttribute(k, v);
+  }
+  for (const c of children.flat()) {
+    if (c == null) continue;
+    el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+  }
+  return el;
+}
+
+function render() {
+  const app = document.getElementById('app');
+  const doneCnt = state.tasks.filter(t=>t.done).length;
+  const filtered = getFiltered();
+
+  // Chips
+  const chips = h('div',{class:'chips'},
+    h('span',{class:'chip',style:{color:'#FF6B6B',borderColor:'#FF6B6B',boxShadow:'2px 2px 0 #FF6B6B',background:'#FFE8E8'}},`📋 全${state.tasks.length}件`),
+    h('span',{class:'chip',style:{color:'#4ECDC4',borderColor:'#4ECDC4',boxShadow:'2px 2px 0 #4ECDC4',background:'#E8FFF8'}},`✅ 完了 ${doneCnt}件`),
+    h('span',{class:'chip',style:{color:'#A78BFA',borderColor:'#A78BFA',boxShadow:'2px 2px 0 #A78BFA',background:'#F0E8FF'}},`📌 残り ${state.tasks.length-doneCnt}件`),
+  );
+
+  // Header
+  const header = h('div',{class:'header'},
+    h('div',{class:'header-badge'}, h('h1',{},'✅ タスク帳')),
+    chips
+  );
+
+  // Priority buttons
+  const priButtons = PRIORITIES.map(p =>
+    h('button',{class:'sel-btn',
+      style:{background:state.priority===p.label?p.color:'#f5f5f5',
+             color:state.priority===p.label?'#fff':'#555',
+             boxShadow:state.priority===p.label?p.shadow:'2px 2px 0 #ccc'},
+      onclick:()=>{ state.priority=p.label; render(); }}, p.label)
+  );
+
+  // Category buttons
+  const catButtons = CATEGORIES.map(c =>
+    h('button',{class:'sel-btn',
+      style:{background:state.category===c.label?c.color:'#f5f5f5',
+             color:state.category===c.label?'#fff':'#555',
+             boxShadow:state.category===c.label?`2px 2px 0 ${c.color}88`:'2px 2px 0 #ccc'},
+      onclick:()=>{ state.category=c.label; render(); }}, c.label)
+  );
+
+  // Tag pills
+  const tagPills = state.tags.map(t =>
+    h('span',{class:'tag-pill'}, t,
+      h('span',{class:'tag-remove', onclick:()=>{ state.tags=state.tags.filter(x=>x!==t); render(); }},'×'))
+  );
+  const tagInp = h('input',{class:'tag-input', placeholder:'タグ名…', value:state.tagInput});
+  tagInp.addEventListener('input', e=>{ state.tagInput=e.target.value; });
+  tagInp.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===','){ e.preventDefault(); addTag(); } });
+  const tagBox = h('div',{class:'tag-box'}, ...tagPills, tagInp);
+
+  // Due input
+  const dueInp = h('input',{type:'date', class:'date-input', value:state.due,
+    style:{background:state.due?'#FFF0E8':'#fafafa'}});
+  dueInp.addEventListener('change', e=>{ state.due=e.target.value; render(); });
+
+  // Main input
+  const mainInp = h('input',{class:'main-input', placeholder:'タスクを入力してEnterまたは＋', value:state.input});
+  mainInp.addEventListener('input', e=>{ state.input=e.target.value; });
+  mainInp.addEventListener('keydown', e=>{ if(e.key==='Enter') addTask(); });
+
+  const panel = h('div',{class:'panel'},
+    h('div',{class:'panel-title'},'＋ 新しいタスク'),
+    h('div',{class:'add-row'}, mainInp, h('button',{class:'add-btn',onclick:addTask},'＋')),
+    h('div',{class:'label'},'優先度'),
+    h('div',{class:'btn-group'}, ...priButtons),
+    h('div',{class:'label'},'カテゴリ'),
+    h('div',{class:'btn-group'}, ...catButtons),
+    h('div',{class:'meta-row'},
+      h('div',{}, h('div',{class:'label'},'📅 締切日'), dueInp),
+      h('div',{style:{flex:'1',minWidth:'150px'}}, h('div',{class:'label'},'🏷️ タグ（Enterで追加）'), tagBox),
+    )
+  );
+
+  // Filter buttons
+  const filterCats = ['すべて',...CATEGORIES.map(c=>c.label)];
+  const filterPris = ['すべて',...PRIORITIES.map(p=>p.label)];
+  const filterEls = [
+    ...filterCats.map(c => h('button',{class:'filter-btn'+(state.filterCat===c?' active':''),
+      onclick:()=>{ state.filterCat=c; render(); }}, c==='すべて'?'🌈 すべて':c)),
+    ...filterPris.map(p => h('button',{class:'filter-btn'+(state.filterPri===p?' active':''),
+      onclick:()=>{ state.filterPri=p; render(); }}, p==='すべて'?'🎯 全優先度':p)),
+    h('button',{class:'toggle-done',
+      onclick:()=>{ state.showDone=!state.showDone; render(); }},
+      state.showDone?'✅ 完了を隠す':'👀 完了を表示')
+  ];
+  const filters = h('div',{class:'filters'},...filterEls);
+
+  // Task cards
+  const cards = filtered.length === 0
+    ? [h('div',{class:'empty'},'🎉 タスクなし！')]
+    : filtered.map(task => {
+        const cc = cardColor(task.id);
+        const dueInfo = formatDue(task.due);
+        const pri = PRIORITIES.find(p=>p.label===task.priority);
+        const cat = CATEGORIES.find(c=>c.label===task.category);
+
+        const checkBox = h('div',{class:'check-box',
+          style:{background:task.done?'#4ECDC4':'#fff',boxShadow:task.done?'none':'2px 2px 0 #000'},
+          onclick:()=>toggleDone(task.id)}, task.done?'✓':'');
+
+        // Task text (tap to edit)
+        let textEl;
+        if (state.editId === task.id) {
+          textEl = h('input',{id:'edit-'+task.id, class:'task-text editing', value:task.text});
+          textEl.addEventListener('blur',()=>saveEdit(task.id));
+          textEl.addEventListener('keydown',e=>{ if(e.key==='Enter') saveEdit(task.id); if(e.key==='Escape'){state.editId=null;render();} });
+          setTimeout(()=>textEl.focus(),10);
+        } else {
+          textEl = h('div',{class:'task-text'+(task.done?' done-text':''),
+            style:{textDecoration:task.done?'line-through':'none',color:task.done?'#999':'#111'}},
+            task.text);
+          textEl.addEventListener('click',()=>{ state.editId=task.id; render(); });
+        }
+
+        const metaTags = [];
+        if(cat) metaTags.push(h('span',{class:'meta-tag',style:{background:cat.color,color:'#fff'}},cat.label));
+        if(pri) metaTags.push(h('span',{class:'meta-tag',style:{background:pri.color,color:'#fff'}},pri.label));
+        if(dueInfo) metaTags.push(h('span',{class:'meta-tag',style:{background:dueInfo.bg,color:dueInfo.color}},'📅 '+dueInfo.text));
+        if(task.tags) task.tags.forEach(t=> metaTags.push(h('span',{class:'meta-tag',style:{background:'#FFD93D',color:'#000'}},'#'+t)));
+
+        const content = h('div',{class:'task-content'}, textEl, h('div',{class:'task-meta'},...metaTags));
+        const delBtn = h('button',{class:'del-btn',onclick:()=>deleteTask(task.id)},'×');
+
+        return h('div',{class:'task-card'+(task.done?' done':''),
+          style:{background:task.done?'#f5f5f5':cc.bg,
+                 borderColor:task.done?'#ccc':cc.border,
+                 boxShadow:task.done?'3px 3px 0 #ccc':`5px 5px 0 ${cc.shadow}`}},
+          checkBox, content, delBtn);
+      });
+
+  const taskList = h('div',{class:'task-list'},...cards);
+  const hint = h('div',{class:'footer-hint'},'タップでタスク名を編集 ✏️');
+
+  const wrapper = h('div',{style:{maxWidth:'680px',margin:'0 auto'}},
+    header, panel, filters, taskList, hint);
+
+  app.innerHTML = '';
+  app.appendChild(wrapper);
+}
+
+render();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js');
+}
+</script>
+
+</body>
+</html>
